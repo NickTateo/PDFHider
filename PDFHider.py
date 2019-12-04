@@ -10,7 +10,8 @@ from Crypto.Cipher import AES
 
 test_key = "ABCDEFGHIJKLMNOP"
 #pdfmagic = "%PDF-"
-c0 =  "%PDF-\0obj\nstream"
+c0 =  "%PDF-obj\nstream\n"
+chunk_end = "\nendstream\nendobj\n"
 cphr = AES
 ecb = cphr.new(test_key, cphr.MODE_ECB)
 
@@ -45,38 +46,32 @@ if(checkArgs(sys.argv)):
 	with open(infile2, "rb") as input:
 		infile2 = pad(input.read())
 	
-	ptxt = infile1[:cphr.block_size]
+	#DEBUG ONLY---!
+	#print(infile1[:16], infile2[:16])
 	
-	#print('none', type(c0.encode()), c0.encode())
+	ptxt = infile2[:cphr.block_size]
+	
 	c0 = ecb.decrypt(c0.encode())
-	#print(type(c0), c0, type(ptxt), ptxt)
 	
-	#initV1 = ""
+	initV1 = ""
 
-	# for i in range(cphr.block_size):
-		# print("\n", i, "- C0:", c0[i], "P:", ptxt[i])
-		# x = c0[i] ^ ptxt[i]
-		# print(x, chr(x))
-		# initV1 += chr(x)
+	for i in range(cphr.block_size):
+		x = ord(c0[i]) ^ ord(ptxt[i])
+		initV1 += chr(x)
 	
-	initV2 = "".join([chr(ord(c0[i]) ^ ord(ptxt[i])) for i in range(cphr.block_size)])
-
-	# print("\nIV Results:\n")
-	# print(len(initV1), initV1)
-	# print(len(initV1.encode()), initV1.encode())
+	#initV2 = "".join([chr(ord(c0[i]) ^ ord(ptxt[i])) for i in range(cphr.block_size)])
 
 	print("\nIV Results:\n")
-	print(len(initV2), initV2)
-	#print(len(initV2.encode('utf-8')), initV2.encode())
-	
-	#print(type(c0[15]), c0[15], type(ptxt[15]), ptxt[15], c0[15] ^ ptxt[15])
+	print(len(initV1), initV1)
 
-	cbc = cphr.new(test_key, cphr.MODE_CBC, initV2)
-	#cbc = cphr.new(test_key, cphr.MODE_CBC, "AAAAAAAAAAAAAAAA")
-	#test = str('AAAAAAAAAAAAAAAA')
-	#print(test.encode())
+	cbc = cphr.new(test_key, cphr.MODE_CBC, initV1)
 	
 	output = cbc.encrypt(infile1)
+	
+	output = output + chunk_end + infile2
+	
+	with open(outfile, "w") as o:
+		o.write(output)
 	
 	
 #DEBUG ONLY---!
