@@ -10,14 +10,14 @@
 import sys
 from Crypto.Cipher import AES
 
-test_key = "ABCDEFGHIJKLMNOP"
-pdfmagic = "%PDF-"
 c0 =  "%PDF-obj\nstream\n"
 chunk_end = "\nendstream\nendobj\n"
+CHUNK_END_SIZE = len(chunk_end)
 cphr = AES
-ecb = cphr.new(test_key, cphr.MODE_ECB)
+pdfmagic = "%PDF-"
+test_key = "ABCDEFGHIJKLMNOP"
 
-#takes argument vector parameter
+#takes argument vector as parameter
 def checkArgs(v):
 	if(len(v) == 4):
 		return True
@@ -28,9 +28,9 @@ def checkArgs(v):
 
 	return False
 	
-#takes argument vector parameter
+#takes argument vector as parameter
 def checkFlag(v):
-	if(len(v) > 1 and v[1][1] != '-'):
+	if(len(v) > 1 and v[1][0] != '-'):
 		return False
 	else:
 		if(len(v) != 3):
@@ -38,9 +38,9 @@ def checkFlag(v):
 			return False
 		else:
 			if(v[1] == "-e"):
-				encrypt(v[2])
+				enc(v[2])
 			elif(v[1] == "-d"):
-				decrypt(v[2])
+				dec(v[2])
 			else:
 				print("Error: unknown flag\n")
 				return False
@@ -51,27 +51,42 @@ def checkFlag(v):
 	#with open(fname1, "rb") as f1
 		#assert f1.startswith(pdfmagic)
 
-def encrypt(file):
+def enc(file):
+	with open(file, "rb") as input:
+		output = input.read()
+	
+	
+	#cbc_e = cphr.new(test_key, cphr.MODE_CBC, retrieveIV(reverse))
+
+	
 	print file
 
-def decrypt(file):
+def dec(file):
 	with open(file, "rb") as input:
 		output = input.read()
 
-	i = (output.find(pdfmagic, 16))
+	i = (output.find(pdfmagic, cphr.block_size))
+	reverse = output[:(i - CHUNK_END_SIZE)] + output[i:]
+	#iv = retrieveIV(output)
+	iv = output[(-cphr.block_size):]
 	
-	cbc_d = cphr.new(test_key, cphr.MODE_CBC, initV1)
+	cbc_d = cphr.new(test_key, cphr.MODE_CBC, iv)
 	
-	reverse = output[:(i-18)] + output[i:]
-	reverse = cbc2.decrypt(reverse)
+	#DEBUG ONLY---!
+	print("Decrypting file", file, "with iv", iv)
+
+	reverse = cbc_d.decrypt(reverse)
 	
 	with open("reverse.pdf", "w") as o:
 		o.write(reverse)
 		
 	
 #retrieves IV from combined files	
-#def retrieveIV(file):
+def retrieveIV(file):
 	
+
+	return file
+		
 #pads data to a multiple of cipher block size
 def pad(fdata):
 	return fdata + ((cphr.block_size - len(fdata) % cphr.block_size) * chr(cphr.block_size - len(fdata) % cphr.block_size)).encode()
@@ -93,6 +108,7 @@ elif(checkArgs(sys.argv)):
 	
 	ptxt = infile1[:cphr.block_size]
 	
+	ecb = cphr.new(test_key, cphr.MODE_ECB)
 	c0 = ecb.decrypt(c0.encode())
 	
 	initV = ""
@@ -100,14 +116,15 @@ elif(checkArgs(sys.argv)):
 	for i in range(cphr.block_size):
 		x = ord(c0[i]) ^ ord(ptxt[i])
 		initV += chr(x)
-	
+		
 	#initV2 = "".join([chr(ord(c0[i]) ^ ord(ptxt[i])) for i in range(cphr.block_size)])
 
-	cbc = cphr.new(test_key, cphr.MODE_CBC, initV)
+	cbc_e = cphr.new(test_key, cphr.MODE_CBC, initV)
 	
-	output = cbc.encrypt(infile1)
+	infile1 += initV
+	output = cbc_e.encrypt(infile1)
 		
-	output = output + chunk_end + infile2
+	output = output + chunk_end + infile2 + initV
 	
 	with open(outfile, "w") as o:
 		o.write(output)
