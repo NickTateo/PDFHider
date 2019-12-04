@@ -52,14 +52,12 @@ def checkFlag(v):
 		#assert f1.startswith(pdfmagic)
 
 def enc(file):
-	with open(file, "rb") as input:
-		output = input.read()
-	
-	
+	#with open(file, "rb") as input:
+	#	output = input.read()
+		
 	#cbc_e = cphr.new(test_key, cphr.MODE_CBC, retrieveIV(reverse))
 
-	
-	print file
+	print "Encrypting file", file
 
 def dec(file):
 	with open(file, "rb") as input:
@@ -72,9 +70,8 @@ def dec(file):
 	
 	cbc_d = cphr.new(test_key, cphr.MODE_CBC, iv)
 	
-	#DEBUG ONLY---!
-	print("Decrypting file", file, "with iv", iv)
-
+	print "Decrypting file", file 
+	
 	reverse = cbc_d.decrypt(reverse)
 	
 	with open("reverse.pdf", "w") as o:
@@ -82,10 +79,7 @@ def dec(file):
 		
 	
 #retrieves IV from combined files	
-def retrieveIV(file):
-	
-
-	return file
+#def retrieveIV(file):
 		
 #pads data to a multiple of cipher block size
 def pad(fdata):
@@ -94,8 +88,7 @@ def pad(fdata):
 #----------Begin main script----------
 
 if(checkFlag(sys.argv)):
-	#DEBUG ONLY---!
-	print("\nFlag detected\n")	
+	print("\nSuccessfully converted file!")
 	
 elif(checkArgs(sys.argv)):
 	infile1, infile2, outfile = sys.argv[1:4]
@@ -117,8 +110,6 @@ elif(checkArgs(sys.argv)):
 		x = ord(c0[i]) ^ ord(ptxt[i])
 		initV += chr(x)
 		
-	#initV2 = "".join([chr(ord(c0[i]) ^ ord(ptxt[i])) for i in range(cphr.block_size)])
-
 	cbc_e = cphr.new(test_key, cphr.MODE_CBC, initV)
 	
 	infile1 += initV
@@ -129,8 +120,8 @@ elif(checkArgs(sys.argv)):
 	with open(outfile, "w") as o:
 		o.write(output)
 	
-	
-#DEBUG ONLY---!
+	print("\nSuccessfully wrote combined file!")
+
 print("\nTerminating program...\n")
 
 #-----------------End-----------------
